@@ -1,11 +1,44 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: Review pull request for a common issue
+author: hatchways
+description: |
+  Runs a review on the pull request for the given tag
 inputs:
-  milliseconds: # change this
+  category:
+    description: 'The category of the review'
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+  tags:
+    description: 'List of tags/checks that will be activated within the review'
+    required: true
+  owner:
+    description: 'Owner of the pull request'
+    required: true
+  repository:
+    description: 'Repository of the pull request'
+    required: true
+  pull_number:
+    description: 'Number of the pull request'
+    required: true
+  review_id:
+    description: 'Id of the pull review to add comments to'
+    required: true
+  commit_id:
+    description: 'Commit id for the pull request review'
+    required: true
+  pull_payload:
+    description: |
+      "The pull object can be passed to avoid redundant requests.
+      Defaults to context.event.pull_request."
+    required: false
+    default: ${{ toJSON(github.event.pull_request) }}
+  GITHUB_TOKEN:
+    description: >
+      "Github token used for authenticating API requests"
+    required: true
+    default: ${{ github.token }}
+outputs:
+  pull_review:
+    description: >
+      Pull request review object after all the comments have been added
 runs:
-  using: 'node12'
-  main: 'dist/index.js'
+  using: node16
+  main: dist/index.js
