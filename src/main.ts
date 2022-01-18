@@ -7,7 +7,7 @@ async function run(): Promise<void> {
     const category: string = core.getInput('for');
     const tags: string[] = JSON.parse(core.getInput('tags'));
 
-    core.notice(`Starting an automated review for ${category}, including checks for:
+    core.debug(`Starting an automated review for ${category}, including checks for:
     - ${tags.join(',\n- ')}`);
 
     const owner = core.getInput('owner');
