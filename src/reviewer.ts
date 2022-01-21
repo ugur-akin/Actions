@@ -7,6 +7,9 @@ import {
 } from './interface/main';
 import {PullRequestData} from './octokit/rest/main';
 
+// TODO: Temporarily exporting everything for unit tests,
+//       hide exports using Rewire or similar.
+
 const githubNumberNotationRe = /([\s_-]|^)#?\d+/;
 const stackLabelRe = /(\s\d_-\/|^)(fs|fe|be|in)(\s\d_-\/|$)/i;
 const endlRe = /\r?\n/;
@@ -14,19 +17,24 @@ const titleLineRe = /^(#+)\s*(?<title>.+)\s*(?<suffix>\(.*\):)?$/;
 const automaticLinkRe =
   /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #\d+/i;
 const requiredRe = /required/i;
-const frontendRe = /frontend/i;
-const backendRe = /backend/i;
+const frontendRe = /front-end|frontend/i;
+const backendRe = /back-end|backend/i;
 
-const isLetter = (c: string): boolean => {
+export const isLetter = (c: string): boolean => {
+  if (c.length !== 1) {
+    throw new Error(
+      `isLetter must be called on a single character, argument has ${c.length}`
+    );
+  }
   return c.toLowerCase() !== c.toUpperCase();
 };
 
-// const replaceDashes = (str: string): string => {
-//   const result = str.replace('-', ' ');
-//   return result;
-// };
+export const replaceDashes = (str: string): string => {
+  const result = str.replace('-', ' ');
+  return result;
+};
 
-const startsWithCapitalizedLetter = (str: string): boolean => {
+export const startsWithCapitalizedLetter = (str: string): boolean => {
   const first = str.at(0);
   if (first) {
     const result = isLetter(first) && first === first.toUpperCase();
@@ -36,13 +44,15 @@ const startsWithCapitalizedLetter = (str: string): boolean => {
   return false;
 };
 
-const toLowerCaseAlphabeticOnly = (str: string): string => {
+export const toLowerCaseAlphabeticOnly = (str: string): string => {
   const alphabetic = str.replace(/[^a-zA-Z]/, '');
   const result = alphabetic.toLowerCase();
   return result;
 };
 
-const getSectionTypeFromSuffix = (suffix: string | undefined): SectionType => {
+export const getSectionTypeFromSuffix = (
+  suffix: string | undefined
+): SectionType => {
   if (suffix) {
     const required = Boolean(suffix.match(requiredRe));
     if (required) return 'required';
@@ -57,7 +67,7 @@ const getSectionTypeFromSuffix = (suffix: string | undefined): SectionType => {
   return 'optional';
 };
 
-const getTemplateSections = (template: string): ITemplateSection[] => {
+export const getTemplateSections = (template: string): ITemplateSection[] => {
   const lines = template.split(endlRe);
 
   /**
@@ -123,7 +133,7 @@ const getTemplateSections = (template: string): ITemplateSection[] => {
   return sections;
 };
 
-const splitBodyIntoTemplateSections = (
+export const splitBodyIntoTemplateSections = (
   body: string,
   templateSections: ITemplateSection[]
 ): IPullBodySection[] => {
@@ -233,7 +243,7 @@ const splitBodyIntoTemplateSections = (
   return sections;
 };
 
-const isEmptyOrWhitespace = (str: string): boolean => {
+export const isEmptyOrWhitespace = (str: string): boolean => {
   const match = str.match(/^\s*$/);
   const result = Boolean(match);
   return result;
@@ -251,7 +261,7 @@ const isEmptyOrWhitespace = (str: string): boolean => {
  *  - Use masked bits to return error profiles?
  *  - TS Interface for pull requests, github has one?
  */
-const titlePassesChecks = (pull: PullRequestData): boolean => {
+export const titlePassesChecks = (pull: PullRequestData): boolean => {
   const {title, head} = pull;
   const {ref} = head;
 
@@ -279,7 +289,7 @@ const titlePassesChecks = (pull: PullRequestData): boolean => {
  *  - Section titles are not edited (e.g. contains (required))
  *  - Body doesn't link issue (NOTE: This only works when base === default_branch)
  */
-const bodyPassesChecks = (
+export const bodyPassesChecks = (
   pull: PullRequestData,
   templateStr: string
 ): boolean => {
@@ -334,4 +344,3 @@ const bodyPassesChecks = (
 
   return failed;
 };
-export {titlePassesChecks, bodyPassesChecks};
