@@ -38,3 +38,9 @@ export interface ISectionOccurance {
   line: number;
   section: ITemplateSection | undefined;
 }
+
+export type PullRequestEvent =
+  | 'COMMENT'
+  | 'REQUEST_CHANGES'
+  | 'APPROVE'
+  | undefined;
