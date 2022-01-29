@@ -30,9 +30,11 @@
   },
   "devDependencies": {
     "@octokit/types": "^6.34.0",
+    "@types/deep-equal": "^1.0.1",
     "@types/node": "^16.10.5",
     "@typescript-eslint/parser": "^5.8.1",
     "@vercel/ncc": "^0.31.1",
+    "deep-equal": "^2.0.5",
     "eslint": "^7.32.0",
     "eslint-plugin-github": "^4.3.2",
     "eslint-plugin-jest": "^25.3.2",
