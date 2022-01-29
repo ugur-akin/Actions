@@ -13,7 +13,7 @@ import {PullRequestData} from './octokit/rest/main';
 const githubNumberNotationRe = /([\s_-]|^)#?\d+/;
 const stackLabelRe = /(\s\d_-\/|^)(fs|fe|be|in)(\s\d_-\/|$)/i;
 const endlRe = /\r?\n/;
-const titleLineRe = /^(#+)\s*(?<title>.+)\s*(?<suffix>\(.*\):)?$/;
+const titleLineRe = /^(#+)\s*(?<title>.+?)\s*(\((?<suffix>.*)\):)?$/;
 const automaticLinkRe =
   /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #\d+/i;
 const requiredRe = /required/i;
@@ -102,7 +102,10 @@ export const getTemplateSections = (template: string): ITemplateSection[] => {
         title: sectionTitle,
         start: lineIdx + 1, // +1 because range doesn't include title
         type: getSectionTypeFromSuffix(sectionTitle.suffix),
-      } as ITemplateSection;
+        lines: [],
+        body: '',
+        end: lineIdx + 1,
+      };
 
       sections.push(section);
     } else {
@@ -112,7 +115,13 @@ export const getTemplateSections = (template: string): ITemplateSection[] => {
       // Create a generic section if the template
       // is misformatted (e.g. doesn't start with a title line)
       if (prev === undefined) {
-        const section = {generic: true} as ITemplateSection;
+        const section = {
+          generic: true,
+          start: lineIdx,
+          end: lineIdx,
+          lines: [],
+          body: '',
+        } as ITemplateSection;
         section.lines.push(line);
         section.start = lineIdx;
 
