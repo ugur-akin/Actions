@@ -1,9 +1,13 @@
 import {
   getSectionTypeFromSuffix,
+  getTemplateSections,
   isLetter,
   startsWithCapitalizedLetter,
 } from '../../src/reviewer';
 import {expect, test, describe} from '@jest/globals';
+import deepEqual from 'deep-equal';
+import {templateSample} from '../samples';
+import _ from 'underscore';
 
 const spChars = ['-', '.', '/', '\\', '*', '$', '*', '#', '%', '_'];
 const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -99,4 +103,13 @@ describe('GetSectionTypeFromSuffix util', () => {
       expect(getSectionTypeFromSuffix(suffix)).toBe('optional');
     }
   );
+});
+
+describe('GetTemplateSections util', () => {
+  test('should match sample', () => {
+    const {raw: templateStr, sections: actualSections} = templateSample;
+    const splitSections = getTemplateSections(templateStr);
+
+    expect(deepEqual(actualSections, splitSections, {strict: true})).toBe(true);
+  });
 });
