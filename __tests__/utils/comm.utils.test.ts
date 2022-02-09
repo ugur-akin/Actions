@@ -7,7 +7,6 @@ import {
 import {expect, test, describe} from '@jest/globals';
 import deepEqual from 'deep-equal';
 import {templateSample} from '../samples';
-import _ from 'underscore';
 
 const spChars = ['-', '.', '/', '\\', '*', '$', '*', '#', '%', '_'];
 const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
