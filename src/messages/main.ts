@@ -1,5 +1,5 @@
 export const goodTitleMessage = `
-Your title looks good overall, thanks for nicely formatting it!
+Your title looks good overall, thanks for nicely formatting it! &#9989;
 `;
 
 export const badTitleMessage = `
@@ -10,7 +10,7 @@ Your pull request title could be improved. Overall, titles:
 - should not include issue numbers/links (e.g. #43) - any related issues should be linked in the body.`;
 
 export const goodBodyMessage = `
-Your summary looks good overall, thanks for paying attention to your communication!
+Your summary looks good overall, thanks for paying attention to your communication! &#9989;
 `;
 
 export const badBodyMessage = `
@@ -27,14 +27,14 @@ export const communicationSummaryMessage = (
   `
 Hello fellow contributor! I'm a robot and I'll be reviewing your PR for its Communication aspects *\\*beep boop\\**!
 
-Let's start with the pull request title:
+### Let's start with the pull request title:
 ${titleSummary}
 
-Then there is the pull request summary:
+### Then there is the pull request summary:
 ${bodySummary}
 
 
 All in all, well-communicating pull requests is an important skill, hence we encourage all candidates to build strong habits in this regard.` +
-  `For additional information, [this article](https://hugooodias.medium.com/the-anatomy-of-a-perfect-pull-request-567382bb6067) touches on some more important points.
+  ` For additional information, [this article](https://hugooodias.medium.com/the-anatomy-of-a-perfect-pull-request-567382bb6067) touches on some more important points.
   
-Good luck &#127881`;
+Good luck &#127881;`;

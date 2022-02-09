@@ -191,7 +191,7 @@ export const splitBodyIntoTemplateSections = (
     (ranges, occurance, occuranceIdx) => {
       const start = occurance.line;
       const isLastOccurance = sectionOccurances.length === occuranceIdx + 1;
-      const end = !isLastOccurance && sectionOccurances[occuranceIdx].line;
+      const end = !isLastOccurance && sectionOccurances[occuranceIdx + 1].line;
 
       const range = end ? [start, end] : [start];
       return [...ranges, range];
@@ -202,7 +202,7 @@ export const splitBodyIntoTemplateSections = (
   const sections = [] as IPullBodySection[];
 
   // When everything is right, each section should have a range
-  if (sectionRanges.length === sectionOccurances.length) {
+  if (sectionRanges.length !== sectionOccurances.length) {
     throw new Error(
       `Section ranges are split incorrectly: the number of section occurances (${sectionOccurances.length}) ` +
         `is different than the number of section ranges (${sectionRanges.length}).`

@@ -11,23 +11,35 @@ import octokit, {PullRequestData} from './octokit/rest/main';
 
 async function run(): Promise<void> {
   try {
-    const category: string = core.getInput('for');
-    const tags: string[] = JSON.parse(core.getInput('tags'));
+    const category: string = core.getInput('category', {required: true});
+    const tags = JSON.parse(
+      core.getInput('tags', {required: true})
+    ) as string[];
 
-    core.debug(`Starting an automated review for ${category}, including checks for:
-    - ${tags.join(',\n- ')}`);
+    core.debug(`
+Starting an automated review for ${category}, including checks for: 
+- ${tags.join(',\n- ')}`);
 
-    const owner = core.getInput('owner');
-    const repository = core.getInput('repository');
-    const pullNumber = Number(core.getInput('pull_number'));
+    const owner = core.getInput('owner', {required: true});
+    const repository = core.getInput('repository', {required: true});
+    const pullNumber = Number(core.getInput('pull_number', {required: true}));
+
+    core.debug(`Reviwing ${owner}/${repository}/pulls/${pullNumber}`);
     octokit.initialize(owner, repository, pullNumber);
 
     const pullInput = core.getInput('pull_payload');
     const hasPullInput = pullInput !== '';
 
+    const pullInputDebugMessage = !hasPullInput
+      ? `Pull payload isn't provided in inputs, will be fetched with REST API.`
+      : `Pull payload received from inputs`;
+    core.debug(pullInputDebugMessage);
+
     const pullRequest: PullRequestData = hasPullInput
       ? JSON.parse(pullInput)
-      : octokit.getPullRequest();
+      : await octokit.getPullRequest();
+
+    // core.debug(`Pull Request: ${JSON.stringify(pullRequest, null, 2)}`);
 
     const templateAsStr = await octokit.getPullRequestTemplate();
 
@@ -46,7 +58,7 @@ async function run(): Promise<void> {
     core.debug(`Review successfully posted at ${pullReview.html_url}`);
     core.setOutput('pull_review', pullReview);
   } catch (error) {
-    if (error instanceof Error) core.setFailed(error.message);
+    if (error instanceof Error) core.setFailed(error);
   }
 }
 

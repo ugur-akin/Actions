@@ -38,9 +38,6 @@ const getPullRequest = async (): Promise<PullRequestData> => {
     owner,
     repo,
     pull_number,
-    mediaType: {
-      format: 'diff',
-    },
   });
   return pullRequest;
 };
@@ -75,6 +72,7 @@ const postReview = async (
       repo,
       pull_number,
       event,
+      body: summary,
     });
     return review;
   } catch (err) {

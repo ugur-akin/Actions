@@ -34,41 +34,39 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
-const github = __importStar(__nccwpck_require__(5438));
-const wait_1 = __nccwpck_require__(5817);
+const main_1 = __nccwpck_require__(7563);
+const reviewer_1 = __nccwpck_require__(3187);
+const main_2 = __importDefault(__nccwpck_require__(1984));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const category = core.getInput('for');
             const tags = JSON.parse(core.getInput('tags'));
-            core.notice(`Starting an automated review for ${category}, including checks for:
-    ${tags.map(tag => `${tag},${'\n'}`)}`);
+            core.debug(`Starting an automated review for ${category}, including checks for:
+    - ${tags.join(',\n- ')}`);
             const owner = core.getInput('owner');
             const repository = core.getInput('repository');
             const pullNumber = Number(core.getInput('pull_number'));
-            const auth = core.getInput('GITHUB_TOKEN');
-            const octokit = github.getOctokit(auth);
+            main_2.default.initialize(owner, repository, pullNumber);
             const pullInput = core.getInput('pull_payload');
-            let pullRequest = pullInput && JSON.parse(pullInput);
-            if (!pullRequest) {
-                const { data: pullPayload } = yield octokit.rest.pulls.get({
-                    owner,
-                    repo: repository,
-                    pull_number: pullNumber,
-                    mediaType: {
-                        format: 'diff',
-                    },
-                });
-                pullRequest = pullPayload;
-            }
-            const ms = core.getInput('milliseconds');
-            core.debug(`Waiting ${ms} milliseconds ...`); // debug is only output if you set the secret `ACTIONS_STEP_DEBUG` to true
-            core.debug(new Date().toTimeString());
-            yield (0, wait_1.wait)(parseInt(ms, 10));
-            core.debug(new Date().toTimeString());
-            core.setOutput('time', new Date().toTimeString());
+            const hasPullInput = pullInput !== '';
+            const pullRequest = hasPullInput
+                ? JSON.parse(pullInput)
+                : main_2.default.getPullRequest();
+            const templateAsStr = yield main_2.default.getPullRequestTemplate();
+            const goodTitle = (0, reviewer_1.titlePassesChecks)(pullRequest);
+            const goodBody = (0, reviewer_1.bodyPassesChecks)(pullRequest, templateAsStr);
+            const titleSummary = goodTitle ? main_1.goodTitleMessage : main_1.badTitleMessage;
+            const bodySummary = goodBody ? main_1.goodBodyMessage : main_1.badBodyMessage;
+            const reviewSummary = (0, main_1.communicationSummaryMessage)(titleSummary, bodySummary);
+            const pullReview = yield main_2.default.postReview(reviewSummary);
+            core.debug(`Review successfully posted at ${pullReview.html_url}`);
+            core.setOutput('pull_review', pullReview);
         }
         catch (error) {
             if (error instanceof Error)
@@ -81,11 +79,74 @@ run();
 
 /***/ }),
 
-/***/ 5817:
-/***/ (function(__unused_webpack_module, exports) {
+/***/ 7563:
+/***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.communicationSummaryMessage = exports.badBodyMessage = exports.goodBodyMessage = exports.badTitleMessage = exports.goodTitleMessage = void 0;
+exports.goodTitleMessage = `
+Your title looks good overall, thanks for nicely formatting it!
+`;
+exports.badTitleMessage = `
+Your pull request title could be improved. Overall, titles:
+- should be formatted as proper English, not left as default (e.g. same as the branch name),
+- should be appropriately capitalized (first word or all words capitalized are okay),
+- should not include any stack labels (e.g. FE/frontend, BE/backend) - there are labels for conveying these,
+- should not include issue numbers/links (e.g. #43) - any related issues should be linked in the body.`;
+exports.goodBodyMessage = `
+Your summary looks good overall, thanks for paying attention to your communication!
+`;
+exports.badBodyMessage = `
+There are some things we can improve on the summary, namely:
+- We should fill all the required information on the template and remove any unused sections,
+- We should format the body fully, not carry over any meta-information included in the template, 
+- Ideally, we should link the issue in the summary [using the appropriate keyword](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword) (or we can do it [manually](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#manually-linking-a-pull-request-to-an-issue) when this is not possible),
+`;
+const communicationSummaryMessage = (titleSummary, bodySummary) => `
+Hello fellow contributor! I'm a robot and I'll be reviewing your PR for its Communication aspects *\\*beep boop\\**!
+
+Let's start with the pull request title:
+${titleSummary}
+
+Then there is the pull request summary:
+${bodySummary}
+
+
+All in all, well-communicating pull requests is an important skill, hence we encourage all candidates to build strong habits in this regard.` +
+    `For additional information, [this article](https://hugooodias.medium.com/the-anatomy-of-a-perfect-pull-request-567382bb6067) touches on some more important points.
+  
+Good luck &#127881`;
+exports.communicationSummaryMessage = communicationSummaryMessage;
+
+
+/***/ }),
+
+/***/ 1984:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -96,18 +157,354 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.wait = void 0;
-function wait(milliseconds) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return new Promise(resolve => {
-            if (isNaN(milliseconds)) {
-                throw new Error('milliseconds not a number');
-            }
-            setTimeout(() => resolve('done!'), milliseconds);
-        });
+exports.postReview = exports.getPullRequestTemplate = exports.getPullRequest = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const github = __importStar(__nccwpck_require__(5438));
+let instance;
+let owner;
+let repo;
+let pull_number;
+const initialize = (_owner, _repo, _pull_number) => {
+    const auth = core.getInput('GITHUB_TOKEN', { required: true });
+    const octokit = github.getOctokit(auth);
+    instance = octokit;
+    owner = _owner;
+    repo = _repo;
+    pull_number = _pull_number;
+};
+const getPullRequest = () => __awaiter(void 0, void 0, void 0, function* () {
+    const { data: pullRequest } = yield instance.rest.pulls.get({
+        owner,
+        repo,
+        pull_number,
+        mediaType: {
+            format: 'diff',
+        },
     });
-}
-exports.wait = wait;
+    return pullRequest;
+});
+exports.getPullRequest = getPullRequest;
+const getPullRequestTemplate = () => __awaiter(void 0, void 0, void 0, function* () {
+    const { data: rawFileContents } = yield instance.rest.repos.getContent({
+        owner,
+        repo,
+        path: 'pull_request_template.md',
+        mediaType: {
+            format: 'raw',
+        },
+    });
+    if (typeof rawFileContents === 'string') {
+        return rawFileContents;
+    }
+    else {
+        throw new Error(`Unable to fetch contents of the template file as text. Type of response payload is ${typeof rawFileContents}, expected string.`);
+    }
+});
+exports.getPullRequestTemplate = getPullRequestTemplate;
+const postReview = (summary, event = 'COMMENT') => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // TODO: implement comments
+        const { data: review } = yield instance.rest.pulls.createReview({
+            owner,
+            repo,
+            pull_number,
+            event,
+        });
+        return review;
+    }
+    catch (err) {
+        throw err;
+    }
+});
+exports.postReview = postReview;
+exports.default = { initialize, getPullRequest, getPullRequestTemplate, postReview };
+
+
+/***/ }),
+
+/***/ 3187:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.bodyPassesChecks = exports.titlePassesChecks = exports.isEmptyOrWhitespace = exports.splitBodyIntoTemplateSections = exports.getTemplateSections = exports.getSectionTypeFromSuffix = exports.toLowerCaseAlphabeticOnly = exports.startsWithCapitalizedLetter = exports.replaceDashes = exports.isLetter = void 0;
+// TODO: Temporarily exporting everything for unit tests,
+//       hide exports using Rewire or similar.
+const githubNumberNotationRe = /([\s_-]|^)#?\d+/;
+const stackLabelRe = /(\s\d_-\/|^)(fs|fe|be|in)(\s\d_-\/|$)/i;
+const endlRe = /\r?\n/;
+const titleLineRe = /^(#+)\s*(?<title>.+?)\s*(\((?<suffix>.*)\):)?$/;
+const automaticLinkRe = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #\d+/i;
+const requiredRe = /required/i;
+const frontendRe = /front-end|frontend/i;
+const backendRe = /back-end|backend/i;
+const isLetter = (c) => {
+    if (c.length !== 1) {
+        throw new Error(`isLetter must be called on a single character, argument has ${c.length}`);
+    }
+    return c.toLowerCase() !== c.toUpperCase();
+};
+exports.isLetter = isLetter;
+const replaceDashes = (str) => {
+    const result = str.replace('-', ' ');
+    return result;
+};
+exports.replaceDashes = replaceDashes;
+const startsWithCapitalizedLetter = (str) => {
+    const first = str.at(0);
+    if (first) {
+        const result = (0, exports.isLetter)(first) && first === first.toUpperCase();
+        return result;
+    }
+    return false;
+};
+exports.startsWithCapitalizedLetter = startsWithCapitalizedLetter;
+const toLowerCaseAlphabeticOnly = (str) => {
+    const alphabetic = str.replace(/[^a-zA-Z]/, '');
+    const result = alphabetic.toLowerCase();
+    return result;
+};
+exports.toLowerCaseAlphabeticOnly = toLowerCaseAlphabeticOnly;
+const getSectionTypeFromSuffix = (suffix) => {
+    if (suffix) {
+        const required = Boolean(suffix.match(requiredRe));
+        if (required)
+            return 'required';
+        const frontend = Boolean(suffix.match(frontendRe));
+        if (frontend)
+            return 'frontend';
+        const backend = Boolean(suffix.match(backendRe));
+        if (backend)
+            return 'backend';
+    }
+    return 'optional';
+};
+exports.getSectionTypeFromSuffix = getSectionTypeFromSuffix;
+const getTemplateSections = (template) => {
+    const lines = template.split(endlRe);
+    /**
+     * An array containing sections. Section body is lines [start, end).
+     * Section title is at line `start-1`
+     */
+    const sections = [];
+    for (const [lineIdx, line] of lines.entries()) {
+        const match = line.match(titleLineRe);
+        // New section found
+        if (match !== null && match.groups !== undefined) {
+            const prev = sections.at(-1);
+            // Conclude last section if exists
+            if (prev !== undefined) {
+                prev.end = lineIdx; // [start, end)
+                prev.body = prev.lines.join('\n');
+            }
+            // Init new section
+            const sectionTitle = {
+                stripped: match.groups.title,
+                raw: line,
+                line: lineIdx,
+                suffix: match.groups.suffix,
+            };
+            const section = {
+                generic: false,
+                title: sectionTitle,
+                start: lineIdx + 1,
+                type: (0, exports.getSectionTypeFromSuffix)(sectionTitle.suffix),
+                lines: [],
+                body: '',
+                end: lineIdx + 1,
+            };
+            sections.push(section);
+        }
+        else {
+            // Not a title line:
+            const prev = sections.at(-1);
+            // Create a generic section if the template
+            // is misformatted (e.g. doesn't start with a title line)
+            if (prev === undefined) {
+                const section = {
+                    generic: true,
+                    start: lineIdx,
+                    end: lineIdx,
+                    lines: [],
+                    body: '',
+                };
+                section.lines.push(line);
+                section.start = lineIdx;
+                sections.push(section);
+            }
+            else {
+                prev.lines.push(line);
+            }
+        }
+    }
+    // Conclude last section
+    const lastSection = sections.at(-1);
+    if (lastSection !== undefined) {
+        lastSection.body = lastSection.lines.join('\n');
+        lastSection.end = lines.length;
+    }
+    return sections;
+};
+exports.getTemplateSections = getTemplateSections;
+const splitBodyIntoTemplateSections = (body, templateSections) => {
+    var _a, _b;
+    const lines = body.split(endlRe);
+    // Generate occurances
+    const sectionOccurances = [];
+    for (const section of templateSections) {
+        // Sometimes, template can have generic sections
+        // (e.g. without a title). They don't need to be split.
+        if (section.generic)
+            continue;
+        // TODO: Handle multiple occurances (e.g. mistake)
+        // We compare against stripped title since header
+        // formats (e.g. "##" vs "###") or suffixes can vary.
+        const occuranceLine = lines.findIndex(line => line.includes(section.title.stripped));
+        if (occuranceLine === -1) {
+            continue;
+        }
+        const occurance = {
+            line: occuranceLine,
+            section,
+        };
+        sectionOccurances.push(occurance);
+    }
+    // Sort occurances by occurance order (top-down)
+    sectionOccurances.sort((s1, s2) => s1.line - s2.line);
+    // Add a sentinel if no occurances found or the first
+    // occurance doesn't start from first line (this is possible)
+    // when the body starts with a generic section. Unshift to maintain
+    // order.
+    const first = sectionOccurances.at(0);
+    if (!first || first.line !== 0) {
+        const genericOccurance = { line: 0 };
+        sectionOccurances.unshift(genericOccurance);
+    }
+    // Determine ranges for each section occurance
+    const sectionRanges = sectionOccurances.reduce((ranges, occurance, occuranceIdx) => {
+        const start = occurance.line;
+        const isLastOccurance = sectionOccurances.length === occuranceIdx + 1;
+        const end = !isLastOccurance && sectionOccurances[occuranceIdx].line;
+        const range = end ? [start, end] : [start];
+        return [...ranges, range];
+    }, []);
+    const sections = [];
+    // When everything is right, each section should have a range
+    if (sectionRanges.length === sectionOccurances.length) {
+        throw new Error(`Section ranges are split incorrectly: the number of section occurances (${sectionOccurances.length}) ` +
+            `is different than the number of section ranges (${sectionRanges.length}).`);
+    }
+    // Fill in sections
+    for (const [idx, range] of sectionRanges.entries()) {
+        const start = range.at(0);
+        if (start === undefined)
+            throw new Error('There is an empty section range!');
+        const end = range.at(1);
+        if (end === undefined && idx !== sectionRanges.length - 1)
+            throw new Error(`A section range of [start, undefined] is allowed only for the last range:` +
+                ` encountered at ${idx + 1}th range (there are ${sectionRanges.length})`);
+        //TODO: Check if section has a title
+        const rawTitle = lines.at(start);
+        if (!rawTitle) {
+            throw new Error(`Section start is out of range: [${start}, ${end}) is not contained in [0, ${lines.length})`);
+        }
+        const title = {};
+        title.raw = rawTitle;
+        //TODO: Do type narrowing or null checking
+        const titleMatch = title.raw.match(titleLineRe);
+        title.stripped = (_a = titleMatch === null || titleMatch === void 0 ? void 0 : titleMatch.groups) === null || _a === void 0 ? void 0 : _a.title;
+        title.suffix = (_b = titleMatch === null || titleMatch === void 0 ? void 0 : titleMatch.groups) === null || _b === void 0 ? void 0 : _b.suffix;
+        title.line = start;
+        const section = {};
+        section.templateSection = sectionOccurances[idx].section;
+        section.title = title;
+        section.start = start + 1;
+        section.end = end || lines.length;
+        section.lines = lines.slice(section.start, section.end);
+        section.body = section.lines.join('\n');
+        sections.push(section);
+    }
+    return sections;
+};
+exports.splitBodyIntoTemplateSections = splitBodyIntoTemplateSections;
+const isEmptyOrWhitespace = (str) => {
+    const match = str.match(/^\s*$/);
+    const result = Boolean(match);
+    return result;
+};
+exports.isEmptyOrWhitespace = isEmptyOrWhitespace;
+/**
+ * Checks Following:
+ *  - The first letter of the title is capitalized.
+ *    Candidates can opt to capitalize each word or just the first one.
+ *  - Title isn't same as the head branch name
+ *  - Title doesn't include the issue number
+ *  - Title doesn't include stack indicators such as FS, FE, IN, BE...
+ *
+ * TODO:
+ *  - Use masked bits to return error profiles?
+ *  - TS Interface for pull requests, github has one?
+ */
+const titlePassesChecks = (pull) => {
+    const { title, head } = pull;
+    const { ref } = head;
+    const captialized = (0, exports.startsWithCapitalizedLetter)(title);
+    const branchNameUntouched = (0, exports.toLowerCaseAlphabeticOnly)(title) === (0, exports.toLowerCaseAlphabeticOnly)(ref);
+    const includesIssueLink = title.search(githubNumberNotationRe) !== -1;
+    const includesStackLabel = title.search(stackLabelRe) !== -1;
+    //TODO: Use bitshift to return a code?
+    const failed = !captialized ||
+        branchNameUntouched ||
+        includesIssueLink ||
+        includesStackLabel;
+    return !failed;
+};
+exports.titlePassesChecks = titlePassesChecks;
+/**
+ * Checks Following:
+ *  - Any line in template appears unedited in the body (except titles),
+ *  - A section is empty but isn't removed
+ *  - A section is removed but is required (TODO: Implement later as it depends on other features)
+ *  - Section titles are not edited (e.g. contains (required))
+ *  - Body doesn't link issue (NOTE: This only works when base === default_branch)
+ */
+const bodyPassesChecks = (pull, templateStr) => {
+    const { body, head, base } = pull;
+    // TODO: Move some of these property assurances outside?
+    if (!head || !head.repo) {
+        throw new Error(`Pull request should include the property pull.head.repo`);
+    }
+    if (!body) {
+        throw new Error(`Pull request body is empty`);
+    }
+    const mergesToDefaultBranch = base.ref === head.repo.default_branch;
+    // const templateStr = await getPullRequestTemplate(
+    //   head.repo.owner.login,
+    //   head.repo.name
+    // );
+    const templateLines = templateStr.split(endlRe);
+    const bodyLines = body.split(endlRe);
+    const hasUneditedLine = bodyLines.some(line => {
+        const isTitleLine = Boolean(line.match(titleLineRe));
+        const isEmptyLine = (0, exports.isEmptyOrWhitespace)(line);
+        // TODO: More clever string matching below (e.g. removed partially)?
+        const containsTemplateLine = templateLines.some(templateLine => line.includes(templateLine));
+        // TODO: Implement checks against section type (e.g. "required"/"frontend"/"optional")
+        return !isTitleLine && !isEmptyLine && containsTemplateLine;
+    });
+    const templateSections = (0, exports.getTemplateSections)(templateStr);
+    const bodySections = (0, exports.splitBodyIntoTemplateSections)(body, templateSections);
+    const hasEmptySection = bodySections.some(section => section.templateSection && (0, exports.isEmptyOrWhitespace)(section.body));
+    const hasUneditedTitle = bodySections.some(section => { var _a; return Boolean((_a = section.title) === null || _a === void 0 ? void 0 : _a.suffix); });
+    const missingAutomaticIssueLink = mergesToDefaultBranch && Boolean(body.match(automaticLinkRe));
+    const failed = hasUneditedLine ||
+        hasEmptySection ||
+        hasUneditedTitle ||
+        missingAutomaticIssueLink;
+    return failed;
+};
+exports.bodyPassesChecks = bodyPassesChecks;
 
 
 /***/ }),

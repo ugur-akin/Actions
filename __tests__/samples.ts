@@ -94,4 +94,19 @@ const templateSample: ITemplateTestSample = {
   ],
 };
 
+// const prBodySample: ITemplateTestSample = {
+//   raw: `### What this PR does (required):
+// - added demo button to login and signup pages
+// - this is a login button with a hardcoded username and password
+
+// ### Screenshots
+// ![Screen Shot 2022-01-12 at 10 05 42 PM](https://user-images.githubusercontent.com/96796802/149258742-b795aa5a-fab1-422f-a372-aab3cfb4321a.png)
+// ![Screen Shot 2022-01-12 at 10 06 23 PM](https://user-images.githubusercontent.com/96796802/149258755-c2401171-41ae-4836-8c23-7d3c7f24e35c.png)
+
+// `,
+// sections: {
+
+// }
+// };
+
 export {templateSample};

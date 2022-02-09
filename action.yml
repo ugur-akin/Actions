@@ -18,12 +18,6 @@ inputs:
   pull_number:
     description: 'Number of the pull request'
     required: true
-  review_id:
-    description: 'Id of the pull review to add comments to'
-    required: true
-  commit_id:
-    description: 'Commit id for the pull request review'
-    required: true
   pull_payload:
     description: |
       "The pull object can be passed to avoid redundant requests.
