@@ -45,19 +45,26 @@ const main_2 = __importDefault(__nccwpck_require__(1984));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const category = core.getInput('for');
-            const tags = JSON.parse(core.getInput('tags'));
-            core.debug(`Starting an automated review for ${category}, including checks for:
-    - ${tags.join(',\n- ')}`);
-            const owner = core.getInput('owner');
-            const repository = core.getInput('repository');
-            const pullNumber = Number(core.getInput('pull_number'));
+            const category = core.getInput('category', { required: true });
+            const tags = JSON.parse(core.getInput('tags', { required: true }));
+            core.debug(`
+Starting an automated review for ${category}, including checks for: 
+- ${tags.join(',\n- ')}`);
+            const owner = core.getInput('owner', { required: true });
+            const repository = core.getInput('repository', { required: true });
+            const pullNumber = Number(core.getInput('pull_number', { required: true }));
+            core.debug(`Reviwing ${owner}/${repository}/pulls/${pullNumber}`);
             main_2.default.initialize(owner, repository, pullNumber);
             const pullInput = core.getInput('pull_payload');
             const hasPullInput = pullInput !== '';
+            const pullInputDebugMessage = !hasPullInput
+                ? `Pull payload isn't provided in inputs, will be fetched with REST API.`
+                : `Pull payload received from inputs`;
+            core.debug(pullInputDebugMessage);
             const pullRequest = hasPullInput
                 ? JSON.parse(pullInput)
-                : main_2.default.getPullRequest();
+                : yield main_2.default.getPullRequest();
+            // core.debug(`Pull Request: ${JSON.stringify(pullRequest, null, 2)}`);
             const templateAsStr = yield main_2.default.getPullRequestTemplate();
             const goodTitle = (0, reviewer_1.titlePassesChecks)(pullRequest);
             const goodBody = (0, reviewer_1.bodyPassesChecks)(pullRequest, templateAsStr);
@@ -70,7 +77,7 @@ function run() {
         }
         catch (error) {
             if (error instanceof Error)
-                core.setFailed(error.message);
+                core.setFailed(error);
         }
     });
 }
@@ -87,7 +94,7 @@ run();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.communicationSummaryMessage = exports.badBodyMessage = exports.goodBodyMessage = exports.badTitleMessage = exports.goodTitleMessage = void 0;
 exports.goodTitleMessage = `
-Your title looks good overall, thanks for nicely formatting it!
+Your title looks good overall, thanks for nicely formatting it! &#9989;
 `;
 exports.badTitleMessage = `
 Your pull request title could be improved. Overall, titles:
@@ -96,7 +103,7 @@ Your pull request title could be improved. Overall, titles:
 - should not include any stack labels (e.g. FE/frontend, BE/backend) - there are labels for conveying these,
 - should not include issue numbers/links (e.g. #43) - any related issues should be linked in the body.`;
 exports.goodBodyMessage = `
-Your summary looks good overall, thanks for paying attention to your communication!
+Your summary looks good overall, thanks for paying attention to your communication! &#9989;
 `;
 exports.badBodyMessage = `
 There are some things we can improve on the summary, namely:
@@ -107,17 +114,17 @@ There are some things we can improve on the summary, namely:
 const communicationSummaryMessage = (titleSummary, bodySummary) => `
 Hello fellow contributor! I'm a robot and I'll be reviewing your PR for its Communication aspects *\\*beep boop\\**!
 
-Let's start with the pull request title:
+### Let's start with the pull request title:
 ${titleSummary}
 
-Then there is the pull request summary:
+### Then there is the pull request summary:
 ${bodySummary}
 
 
 All in all, well-communicating pull requests is an important skill, hence we encourage all candidates to build strong habits in this regard.` +
-    `For additional information, [this article](https://hugooodias.medium.com/the-anatomy-of-a-perfect-pull-request-567382bb6067) touches on some more important points.
+    ` For additional information, [this article](https://hugooodias.medium.com/the-anatomy-of-a-perfect-pull-request-567382bb6067) touches on some more important points.
   
-Good luck &#127881`;
+Good luck &#127881;`;
 exports.communicationSummaryMessage = communicationSummaryMessage;
 
 
@@ -177,9 +184,6 @@ const getPullRequest = () => __awaiter(void 0, void 0, void 0, function* () {
         owner,
         repo,
         pull_number,
-        mediaType: {
-            format: 'diff',
-        },
     });
     return pullRequest;
 });
@@ -209,6 +213,7 @@ const postReview = (summary, event = 'COMMENT') => __awaiter(void 0, void 0, voi
             repo,
             pull_number,
             event,
+            body: summary,
         });
         return review;
     }
@@ -232,7 +237,7 @@ exports.bodyPassesChecks = exports.titlePassesChecks = exports.isEmptyOrWhitespa
 // TODO: Temporarily exporting everything for unit tests,
 //       hide exports using Rewire or similar.
 const githubNumberNotationRe = /([\s_-]|^)#?\d+/;
-const stackLabelRe = /(\s\d_-\/|^)(fs|fe|be|in)(\s\d_-\/|$)/i;
+const stackLabelRe = /([\s\d_\-/]|^)(fs|fe|be|in)([\s\d_\-/]|$)/i;
 const endlRe = /\r?\n/;
 const titleLineRe = /^(#+)\s*(?<title>.+?)\s*(\((?<suffix>.*)\):)?$/;
 const automaticLinkRe = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #\d+/i;
@@ -385,13 +390,13 @@ const splitBodyIntoTemplateSections = (body, templateSections) => {
     const sectionRanges = sectionOccurances.reduce((ranges, occurance, occuranceIdx) => {
         const start = occurance.line;
         const isLastOccurance = sectionOccurances.length === occuranceIdx + 1;
-        const end = !isLastOccurance && sectionOccurances[occuranceIdx].line;
+        const end = !isLastOccurance && sectionOccurances[occuranceIdx + 1].line;
         const range = end ? [start, end] : [start];
         return [...ranges, range];
     }, []);
     const sections = [];
     // When everything is right, each section should have a range
-    if (sectionRanges.length === sectionOccurances.length) {
+    if (sectionRanges.length !== sectionOccurances.length) {
         throw new Error(`Section ranges are split incorrectly: the number of section occurances (${sectionOccurances.length}) ` +
             `is different than the number of section ranges (${sectionRanges.length}).`);
     }
@@ -453,6 +458,10 @@ const titlePassesChecks = (pull) => {
     const branchNameUntouched = (0, exports.toLowerCaseAlphabeticOnly)(title) === (0, exports.toLowerCaseAlphabeticOnly)(ref);
     const includesIssueLink = title.search(githubNumberNotationRe) !== -1;
     const includesStackLabel = title.search(stackLabelRe) !== -1;
+    console.log(`Has capitalized title: ${captialized}`);
+    console.log(`Title is default value: ${branchNameUntouched}`);
+    console.log(`Issue number in title: ${includesIssueLink}`);
+    console.log(`There is a stack label in title: ${includesStackLabel}`);
     //TODO: Use bitshift to return a code?
     const failed = !captialized ||
         branchNameUntouched ||
@@ -498,11 +507,15 @@ const bodyPassesChecks = (pull, templateStr) => {
     const hasEmptySection = bodySections.some(section => section.templateSection && (0, exports.isEmptyOrWhitespace)(section.body));
     const hasUneditedTitle = bodySections.some(section => { var _a; return Boolean((_a = section.title) === null || _a === void 0 ? void 0 : _a.suffix); });
     const missingAutomaticIssueLink = mergesToDefaultBranch && Boolean(body.match(automaticLinkRe));
+    console.log(`Has exact line from template: ${hasUneditedLine}`);
+    console.log(`Section without body: ${hasEmptySection}`);
+    console.log(`Titles include meta: ${hasUneditedTitle}`);
+    console.log(`Doesn't link issue: ${missingAutomaticIssueLink}`);
     const failed = hasUneditedLine ||
         hasEmptySection ||
         hasUneditedTitle ||
         missingAutomaticIssueLink;
-    return failed;
+    return !failed;
 };
 exports.bodyPassesChecks = bodyPassesChecks;
 
