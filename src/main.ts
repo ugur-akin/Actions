@@ -12,6 +12,14 @@ import octokit, {PullRequestData} from './octokit/rest/main';
 async function run(): Promise<void> {
   try {
     const category: string = core.getInput('category', {required: true});
+
+    //TODO: Remove this temporary check
+    if (category !== 'Communication') {
+      throw new Error(
+        `"${category}" is not a valid category or its automated reviewer is not yet implemented.`
+      );
+    }
+
     const tags = JSON.parse(
       core.getInput('tags', {required: true})
     ) as string[];
