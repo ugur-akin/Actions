@@ -46,6 +46,10 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const category = core.getInput('category', { required: true });
+            //TODO: Remove this temporary check
+            if (category !== 'Communication') {
+                throw new Error(`"${category}" is not a valid category or its automated reviewer is not yet implemented.`);
+            }
             const tags = JSON.parse(core.getInput('tags', { required: true }));
             core.debug(`
 Starting an automated review for ${category}, including checks for: 
