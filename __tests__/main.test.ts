@@ -9,9 +9,9 @@ test('test runs', () => {
   process.env[
     'INPUT_TAGS'
   ] = `["suboptimal-branch-name","suboptimal-commit-names","suboptimal-unedited-title","modified-pr-template","leftover-pr-template"]`;
-  process.env['INPUT_OWNER'] = 'hatchways';
-  process.env['INPUT_REPOSITORY'] = 'team-teak';
-  process.env['INPUT_PULL_NUMBER'] = '101';
+  process.env['INPUT_OWNER'] = 'ugur-akin';
+  process.env['INPUT_REPOSITORY'] = 'team-actions-demo';
+  process.env['INPUT_PULL_NUMBER'] = '3';
   process.env['INPUT_GITHUB_TOKEN'] = process.env['PERSONAL_ACCESS_TOKEN'];
   const np = process.execPath;
   const ip = path.join(__dirname, '..', 'lib', 'main.js');

@@ -11,7 +11,7 @@ import {PullRequestData} from './octokit/rest/main';
 //       hide exports using Rewire or similar.
 
 const githubNumberNotationRe = /([\s_-]|^)#?\d+/;
-const stackLabelRe = /(\s\d_-\/|^)(fs|fe|be|in)(\s\d_-\/|$)/i;
+const stackLabelRe = /([\s\d_\-/]|^)(fs|fe|be|in)([\s\d_\-/]|$)/i;
 const endlRe = /\r?\n/;
 const titleLineRe = /^(#+)\s*(?<title>.+?)\s*(\((?<suffix>.*)\):)?$/;
 const automaticLinkRe =
@@ -280,6 +280,11 @@ export const titlePassesChecks = (pull: PullRequestData): boolean => {
   const includesIssueLink = title.search(githubNumberNotationRe) !== -1;
   const includesStackLabel = title.search(stackLabelRe) !== -1;
 
+  console.log(`Has capitalized title: ${captialized}`);
+  console.log(`Title is default value: ${branchNameUntouched}`);
+  console.log(`Issue number in title: ${includesIssueLink}`);
+  console.log(`There is a stack label in title: ${includesStackLabel}`);
+
   //TODO: Use bitshift to return a code?
   const failed =
     !captialized ||
@@ -345,11 +350,16 @@ export const bodyPassesChecks = (
   const missingAutomaticIssueLink =
     mergesToDefaultBranch && Boolean(body.match(automaticLinkRe));
 
+  console.log(`Has exact line from template: ${hasUneditedLine}`);
+  console.log(`Section without body: ${hasEmptySection}`);
+  console.log(`Titles include meta: ${hasUneditedTitle}`);
+  console.log(`Doesn't link issue: ${missingAutomaticIssueLink}`);
+
   const failed =
     hasUneditedLine ||
     hasEmptySection ||
     hasUneditedTitle ||
     missingAutomaticIssueLink;
 
-  return failed;
+  return !failed;
 };
