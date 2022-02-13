@@ -5,9 +5,9 @@ import {
   communicationSummaryMessage,
   goodBodyMessage,
   goodTitleMessage,
-} from './messages/main';
+} from './messages';
 import {bodyPassesChecks, titlePassesChecks} from './reviewer';
-import octokit, {PullRequestData} from './octokit/rest/main';
+import octokit, {PullRequestData} from './octokit-instance';
 
 async function run(): Promise<void> {
   try {

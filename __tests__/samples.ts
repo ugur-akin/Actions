@@ -1,4 +1,4 @@
-import {ITemplateSection} from '../src/interface/main';
+import {ITemplateSection} from '../src/interface';
 
 interface ITemplateTestSample {
   raw: string;

@@ -5,7 +5,7 @@ import * as github from '@actions/github';
 // eslint-disable-next-line import/named
 import {GetResponseDataTypeFromEndpointMethod} from '@octokit/types';
 import {GitHub} from '@actions/github/lib/utils';
-import {PullRequestEvent} from '../../interface/main';
+import {PullRequestEvent} from './interface';
 
 export type Octokit = InstanceType<typeof GitHub>;
 export type PullRequestData = GetResponseDataTypeFromEndpointMethod<
