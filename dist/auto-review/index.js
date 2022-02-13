@@ -39,9 +39,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
+const octokit_wrapper_1 = __importDefault(__nccwpck_require__(7174));
 const messages_1 = __nccwpck_require__(9112);
 const reviewer_1 = __nccwpck_require__(3187);
-const octokit_instance_1 = __importDefault(__nccwpck_require__(7301));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -57,8 +57,9 @@ Starting an automated review for ${category}, including checks for:
             const owner = core.getInput('owner', { required: true });
             const repository = core.getInput('repository', { required: true });
             const pullNumber = Number(core.getInput('pull_number', { required: true }));
+            const token = core.getInput('GITHUB_TOKEN', { required: true });
             core.debug(`Reviwing ${owner}/${repository}/pulls/${pullNumber}`);
-            octokit_instance_1.default.initialize(owner, repository, pullNumber);
+            const octokit = octokit_wrapper_1.default.config(owner, repository, pullNumber, token);
             const pullInput = core.getInput('pull_payload');
             const hasPullInput = pullInput !== '';
             const pullInputDebugMessage = !hasPullInput
@@ -67,15 +68,15 @@ Starting an automated review for ${category}, including checks for:
             core.debug(pullInputDebugMessage);
             const pullRequest = hasPullInput
                 ? JSON.parse(pullInput)
-                : yield octokit_instance_1.default.getPullRequest();
+                : yield octokit.getPullRequest();
             // core.debug(`Pull Request: ${JSON.stringify(pullRequest, null, 2)}`);
-            const templateAsStr = yield octokit_instance_1.default.getPullRequestTemplate();
+            const templateAsStr = yield octokit.getPullRequestTemplate();
             const goodTitle = (0, reviewer_1.titlePassesChecks)(pullRequest);
             const goodBody = (0, reviewer_1.bodyPassesChecks)(pullRequest, templateAsStr);
             const titleSummary = goodTitle ? messages_1.goodTitleMessage : messages_1.badTitleMessage;
             const bodySummary = goodBody ? messages_1.goodBodyMessage : messages_1.badBodyMessage;
             const reviewSummary = (0, messages_1.communicationSummaryMessage)(titleSummary, bodySummary);
-            const pullReview = yield octokit_instance_1.default.postReview(reviewSummary);
+            const pullReview = yield octokit.postReview(reviewSummary);
             core.debug(`Review successfully posted at ${pullReview.html_url}`);
             core.setOutput('pull_review', pullReview);
         }
@@ -134,7 +135,7 @@ exports.communicationSummaryMessage = communicationSummaryMessage;
 
 /***/ }),
 
-/***/ 7301:
+/***/ 7174:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -168,79 +169,82 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.postReview = exports.getPullRequestTemplate = exports.getPullRequest = void 0;
-const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
-let instance;
-let owner;
-let repo;
-let pull_number;
-const initialize = (_owner, _repo, _pull_number) => {
-    const auth = core.getInput('GITHUB_TOKEN', { required: true });
-    const octokit = github.getOctokit(auth);
-    instance = octokit;
-    owner = _owner;
-    repo = _repo;
-    pull_number = _pull_number;
-};
-const getPullRequest = () => __awaiter(void 0, void 0, void 0, function* () {
-    const { data: pullRequest } = yield instance.rest.pulls.get({
-        owner,
-        repo,
-        pull_number,
-    });
-    return pullRequest;
-});
-exports.getPullRequest = getPullRequest;
-const getPullRequestTemplate = () => __awaiter(void 0, void 0, void 0, function* () {
-    const { data: rawFileContents } = yield instance.rest.repos.getContent({
-        owner,
-        repo,
-        path: 'pull_request_template.md',
-        mediaType: {
-            format: 'raw',
-        },
-    });
-    if (typeof rawFileContents === 'string') {
-        return rawFileContents;
-    }
-    else {
-        throw new Error(`Unable to fetch contents of the template file as text. Type of response payload is ${typeof rawFileContents}, expected string.`);
-    }
-});
-exports.getPullRequestTemplate = getPullRequestTemplate;
-const postReview = (summary, event = 'COMMENT') => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        // TODO: implement comments
-        const { data: review } = yield instance.rest.pulls.createReview({
-            owner,
-            repo,
-            pull_number,
-            event,
-            body: summary,
+const OctokitWrapper = (() => {
+    let instance;
+    let owner;
+    let repo;
+    let pull_number;
+    let isConfigured = false;
+    const config = (_owner, _repo, _pull_number, _token) => {
+        if (isConfigured) {
+            throw new Error('Instance is already configured!');
+        }
+        const octokit = github.getOctokit(_token);
+        owner = _owner;
+        repo = _repo;
+        pull_number = _pull_number;
+        isConfigured = true;
+        const getPullRequest = () => __awaiter(void 0, void 0, void 0, function* () {
+            const { data: pullRequest } = yield octokit.rest.pulls.get({
+                owner,
+                repo,
+                pull_number,
+            });
+            return pullRequest;
         });
-        return review;
-    }
-    catch (err) {
-        throw err;
-    }
-});
-exports.postReview = postReview;
-const getIssue = (issueNumber) => __awaiter(void 0, void 0, void 0, function* () {
-    const { data: pullRequest } = yield instance.rest.issues.get({
-        owner,
-        repo,
-        issue_number: issueNumber,
-    });
-    return pullRequest;
-});
-exports.default = {
-    initialize,
-    getPullRequest,
-    getPullRequestTemplate,
-    postReview,
-    getIssue,
-};
+        const getPullRequestTemplate = () => __awaiter(void 0, void 0, void 0, function* () {
+            const { data: rawFileContents } = yield octokit.rest.repos.getContent({
+                owner,
+                repo,
+                path: 'pull_request_template.md',
+                mediaType: {
+                    format: 'raw',
+                },
+            });
+            if (typeof rawFileContents === 'string') {
+                return rawFileContents;
+            }
+            else {
+                throw new Error(`Unable to fetch contents of the template file as text. Type of response payload is ${typeof rawFileContents}, expected string.`);
+            }
+        });
+        const getIssue = (issueNumber) => __awaiter(void 0, void 0, void 0, function* () {
+            const { data: pullRequest } = yield octokit.rest.issues.get({
+                owner,
+                repo,
+                issue_number: issueNumber,
+            });
+            return pullRequest;
+        });
+        const postReview = (summary, event = 'COMMENT') => __awaiter(void 0, void 0, void 0, function* () {
+            try {
+                // TODO: implement comments
+                const { data: review } = yield octokit.rest.pulls.createReview({
+                    owner,
+                    repo,
+                    pull_number,
+                    event,
+                    body: summary,
+                });
+                return review;
+            }
+            catch (err) {
+                throw err;
+            }
+        });
+        instance = { getPullRequest, getPullRequestTemplate, postReview, getIssue };
+        return instance;
+    };
+    const getInstance = () => {
+        if (!isConfigured) {
+            throw new Error("Context isn't configured. Please call `.config()` before accessing the instance");
+        }
+        return instance;
+    };
+    return { config, getInstance };
+})();
+exports.default = OctokitWrapper;
 
 
 /***/ }),
