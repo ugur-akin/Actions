@@ -345,7 +345,7 @@ export const runBodyChecks = (
     Boolean(section.title?.suffix)
   );
   const missingAutomaticIssueLink =
-    mergesToDefaultBranch && Boolean(body.match(automaticLinkRe));
+    mergesToDefaultBranch && !body.match(automaticLinkRe);
 
   const result = {
     'unedited-template-line': hasUneditedLine,
