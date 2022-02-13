@@ -14,7 +14,7 @@ test('test runs', () => {
   process.env['INPUT_PULL_NUMBER'] = '3';
   process.env['INPUT_GITHUB_TOKEN'] = process.env['PERSONAL_ACCESS_TOKEN'];
   const np = process.execPath;
-  const ip = path.join(__dirname, '..', 'lib', 'main.js');
+  const ip = path.join(__dirname, '..', 'lib', 'auto-review.js');
   const options: cp.ExecFileSyncOptions = {
     env: process.env,
     encoding: 'utf-8',
