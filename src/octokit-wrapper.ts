@@ -17,7 +17,7 @@ export type IssueData = GetResponseDataTypeFromEndpointMethod<
   Octokit['rest']['issues']['get']
 >;
 
-export interface IOctokitRest {
+export interface IOctokitWrapper {
   getPullRequest: () => Promise<PullRequestData>;
   getPullRequestTemplate: () => Promise<string>;
   postReview: (
@@ -27,8 +27,8 @@ export interface IOctokitRest {
   getIssue: (issueNumber: number) => Promise<IssueData>;
 }
 
-const OctokitRest = (() => {
-  let instance: IOctokitRest;
+const OctokitWrapper = (() => {
+  let instance: IOctokitWrapper;
   let owner: string;
   let repo: string;
   let pull_number: number;
@@ -39,7 +39,7 @@ const OctokitRest = (() => {
     _repo: string,
     _pull_number: number,
     _token: string
-  ): IOctokitRest => {
+  ): IOctokitWrapper => {
     if (isConfigured) {
       throw new Error('Instance is already configured!');
     }
@@ -110,7 +110,7 @@ const OctokitRest = (() => {
     return instance;
   };
 
-  const getInstance = (): IOctokitRest => {
+  const getInstance = (): IOctokitWrapper => {
     if (!isConfigured) {
       throw new Error(
         "Context isn't configured. Please call `.config()` before accessing the instance"
@@ -122,4 +122,4 @@ const OctokitRest = (() => {
   return {config, getInstance};
 })();
 
-export default OctokitRest;
+export default OctokitWrapper;

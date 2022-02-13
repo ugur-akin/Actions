@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import octokit, {IssueData, PullRequestData} from './octokit-instance';
+import OctokitWrapper, {IssueData, PullRequestData} from './octokit-wrapper';
 import {JSDOM} from 'jsdom';
 import airtable from './airtable';
 import axios from 'axios';
@@ -48,6 +48,9 @@ const run = async (): Promise<void> => {
     const owner = core.getInput('owner', {required: true});
     const repository = core.getInput('repository', {required: true});
     const pullNumber = Number(core.getInput('pull_number', {required: true}));
+    const token = core.getInput('GITHUB_TOKEN', {required: true});
+
+    const octokit = OctokitWrapper.config(owner, repository, pullNumber, token);
 
     const pullInput = core.getInput('pull_payload');
     const hasPullInput = pullInput !== '';
@@ -56,7 +59,6 @@ const run = async (): Promise<void> => {
       ? `Pull payload isn't provided in inputs, will be fetched with REST API.`
       : `Pull payload received from inputs`;
     core.debug(pullInputDebugMessage);
-    octokit.initialize(owner, repository, pullNumber);
 
     const pullRequest: PullRequestData = hasPullInput
       ? JSON.parse(pullInput)

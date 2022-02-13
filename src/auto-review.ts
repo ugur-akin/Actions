@@ -1,4 +1,5 @@
 import * as core from '@actions/core';
+import OctokitWrapper, {PullRequestData} from './octokit-wrapper';
 import {
   badBodyMessage,
   badTitleMessage,
@@ -7,7 +8,6 @@ import {
   goodTitleMessage,
 } from './messages';
 import {bodyPassesChecks, titlePassesChecks} from './reviewer';
-import octokit, {PullRequestData} from './octokit-instance';
 
 async function run(): Promise<void> {
   try {
@@ -31,9 +31,10 @@ Starting an automated review for ${category}, including checks for:
     const owner = core.getInput('owner', {required: true});
     const repository = core.getInput('repository', {required: true});
     const pullNumber = Number(core.getInput('pull_number', {required: true}));
+    const token = core.getInput('GITHUB_TOKEN', {required: true});
 
     core.debug(`Reviwing ${owner}/${repository}/pulls/${pullNumber}`);
-    octokit.initialize(owner, repository, pullNumber);
+    const octokit = OctokitWrapper.config(owner, repository, pullNumber, token);
 
     const pullInput = core.getInput('pull_payload');
     const hasPullInput = pullInput !== '';

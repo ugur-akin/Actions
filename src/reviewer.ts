@@ -5,7 +5,7 @@ import {
   ITemplateSection,
   SectionType,
 } from './interface';
-import {PullRequestData} from './octokit-instance';
+import {PullRequestData} from './octokit-wrapper';
 
 // TODO: Temporarily exporting everything for unit tests,
 //       hide exports using Rewire or similar.
