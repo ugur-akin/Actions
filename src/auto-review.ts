@@ -7,7 +7,7 @@ import {
   goodBodyMessage,
   goodTitleMessage,
 } from './messages';
-import {bodyPassesChecks, titlePassesChecks} from './reviewer';
+import {runBodyChecks, runTitleChecks} from './reviewer';
 
 async function run(): Promise<void> {
   try {
@@ -52,15 +52,18 @@ Starting an automated review for ${category}, including checks for:
 
     const templateAsStr = await octokit.getPullRequestTemplate();
 
-    const goodTitle = titlePassesChecks(pullRequest);
-    const goodBody = bodyPassesChecks(pullRequest, templateAsStr);
+    const titleProblemState = runTitleChecks(pullRequest);
+    const bodyProblemState = runBodyChecks(pullRequest, templateAsStr);
 
-    const titleSummary = goodTitle ? goodTitleMessage : badTitleMessage;
-    const bodySummary = goodBody ? goodBodyMessage : badBodyMessage;
+    core.debug('Title problem state:');
+    core.debug(`${titleProblemState}`);
+
+    core.debug('Body problem state:');
+    core.debug(`${bodyProblemState}`);
 
     const reviewSummary = communicationSummaryMessage(
-      titleSummary,
-      bodySummary
+      titleProblemState,
+      bodyProblemState
     );
 
     const pullReview = await octokit.postReview(reviewSummary);

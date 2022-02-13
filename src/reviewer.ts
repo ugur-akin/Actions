@@ -270,7 +270,13 @@ export const isEmptyOrWhitespace = (str: string): boolean => {
  *  - Use masked bits to return error profiles?
  *  - TS Interface for pull requests, github has one?
  */
-export const titlePassesChecks = (pull: PullRequestData): boolean => {
+export type ProblemOccuranceState = {
+  [key: string]: boolean;
+};
+
+export const runTitleChecks = (
+  pull: PullRequestData
+): ProblemOccuranceState => {
   const {title, head} = pull;
   const {ref} = head;
 
@@ -280,19 +286,15 @@ export const titlePassesChecks = (pull: PullRequestData): boolean => {
   const includesIssueLink = title.search(githubNumberNotationRe) !== -1;
   const includesStackLabel = title.search(stackLabelRe) !== -1;
 
-  console.log(`Has capitalized title: ${captialized}`);
-  console.log(`Title is default value: ${branchNameUntouched}`);
-  console.log(`Issue number in title: ${includesIssueLink}`);
-  console.log(`There is a stack label in title: ${includesStackLabel}`);
-
   //TODO: Use bitshift to return a code?
-  const failed =
-    !captialized ||
-    branchNameUntouched ||
-    includesIssueLink ||
-    includesStackLabel;
+  const result = {
+    'improper-casing': !captialized,
+    'default-title': branchNameUntouched,
+    'issue-link-in-title': includesIssueLink,
+    'stack-label-in-title': includesStackLabel,
+  };
 
-  return !failed;
+  return result;
 };
 
 /**
@@ -303,10 +305,10 @@ export const titlePassesChecks = (pull: PullRequestData): boolean => {
  *  - Section titles are not edited (e.g. contains (required))
  *  - Body doesn't link issue (NOTE: This only works when base === default_branch)
  */
-export const bodyPassesChecks = (
+export const runBodyChecks = (
   pull: PullRequestData,
   templateStr: string
-): boolean => {
+): ProblemOccuranceState => {
   const {body, head, base} = pull;
 
   // TODO: Move some of these property assurances outside?
@@ -319,11 +321,6 @@ export const bodyPassesChecks = (
   }
 
   const mergesToDefaultBranch = base.ref === head.repo.default_branch;
-
-  // const templateStr = await getPullRequestTemplate(
-  //   head.repo.owner.login,
-  //   head.repo.name
-  // );
 
   const templateLines = templateStr.split(endlRe);
   const bodyLines = body.split(endlRe);
@@ -350,16 +347,12 @@ export const bodyPassesChecks = (
   const missingAutomaticIssueLink =
     mergesToDefaultBranch && Boolean(body.match(automaticLinkRe));
 
-  console.log(`Has exact line from template: ${hasUneditedLine}`);
-  console.log(`Section without body: ${hasEmptySection}`);
-  console.log(`Titles include meta: ${hasUneditedTitle}`);
-  console.log(`Doesn't link issue: ${missingAutomaticIssueLink}`);
+  const result = {
+    'unedited-template-line': hasUneditedLine,
+    'empty-section': hasEmptySection,
+    'includes-title-metadata': hasUneditedTitle,
+    'issue-link-missing': missingAutomaticIssueLink,
+  };
 
-  const failed =
-    hasUneditedLine ||
-    hasEmptySection ||
-    hasUneditedTitle ||
-    missingAutomaticIssueLink;
-
-  return !failed;
+  return result;
 };
