@@ -23,7 +23,7 @@ inputs:
       "The pull object can be passed to avoid redundant requests.
       Defaults to context.event.pull_request."
     required: false
-    default: ${{ toJSON(github.event.pull_request) }}
+    default: ''
   GITHUB_TOKEN:
     description: >
       "Github token used for authenticating API requests"
