@@ -54,7 +54,7 @@ const init = (API_KEY: string, BASE_ID: string): AirtableRest => {
             automatedReviewTable
               .select({
                 fields: ['Name', 'Category'],
-                filterByFormula: formula
+                filterByFormula: formula,
               })
               .eachPage(
                 (records, fetchNextPage) => {
@@ -90,7 +90,7 @@ const init = (API_KEY: string, BASE_ID: string): AirtableRest => {
         );
 
         return fetchResult;
-      }
+      },
     };
   } catch (err) {
     throw err;

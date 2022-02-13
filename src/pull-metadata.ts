@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import octokit, {IssueData, PullRequestData} from './octokit/rest/main';
+import octokit, {IssueData, PullRequestData} from './octokit-instance';
 import {JSDOM} from 'jsdom';
 import airtable from './airtable';
 import axios from 'axios';
@@ -27,7 +27,7 @@ const fetchPullRequest = async (url: string): Promise<string> => {
   try {
     const resp = await axios.get(url, {
       headers: {'Content-Type': 'text/html'},
-      withCredentials: true
+      withCredentials: true,
     });
 
     return await resp.data;
@@ -39,10 +39,10 @@ const fetchPullRequest = async (url: string): Promise<string> => {
 const run = async (): Promise<void> => {
   try {
     const AIRTABLE_API_KEY = core.getInput('AIRTABLE_API_KEY', {
-      required: true
+      required: true,
     });
     const AIRTABLE_BASE_ID = core.getInput('AIRTABLE_BASE_ID', {
-      required: true
+      required: true,
     });
 
     const owner = core.getInput('owner', {required: true});

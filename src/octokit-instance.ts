@@ -14,6 +14,9 @@ export type PullRequestData = GetResponseDataTypeFromEndpointMethod<
 export type PullReviewData = GetResponseDataTypeFromEndpointMethod<
   Octokit['rest']['pulls']['createReview']
 >;
+export type IssueData = GetResponseDataTypeFromEndpointMethod<
+  Octokit['rest']['issues']['get']
+>;
 
 let instance: Octokit;
 let owner: string;
@@ -80,5 +83,20 @@ const postReview = async (
   }
 };
 
-export default {initialize, getPullRequest, getPullRequestTemplate, postReview};
+const getIssue = async (issueNumber: number): Promise<IssueData> => {
+  const {data: pullRequest} = await instance.rest.issues.get({
+    owner,
+    repo,
+    issue_number: issueNumber,
+  });
+  return pullRequest;
+};
+
+export default {
+  initialize,
+  getPullRequest,
+  getPullRequestTemplate,
+  postReview,
+  getIssue,
+};
 export {getPullRequest, getPullRequestTemplate, postReview};
