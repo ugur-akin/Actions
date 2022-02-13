@@ -7,6 +7,7 @@ import {
 import {expect, test, describe} from '@jest/globals';
 import deepEqual from 'deep-equal';
 import {templateSample} from '../samples';
+import {communicationSummaryMessage} from '../../src/messages';
 
 const spChars = ['-', '.', '/', '\\', '*', '$', '*', '#', '%', '_'];
 const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -110,5 +111,26 @@ describe('GetTemplateSections util', () => {
     const splitSections = getTemplateSections(templateStr);
 
     expect(deepEqual(actualSections, splitSections, {strict: true})).toBe(true);
+  });
+});
+
+describe('Comm Message test', () => {
+  const title = {
+    'improper-casing': false,
+    'default-title': false,
+    'issue-link-in-title': true,
+    'stack-label-in-title': true,
+  };
+  const body = {
+    'unedited-template-line': true,
+    'empty-section': false,
+    'includes-title-metadata': true,
+    'issue-link-missing': true,
+  };
+
+  test('It succeds', () => {
+    const result = communicationSummaryMessage(title, body);
+    console.log(result);
+    expect(result).toBeTruthy();
   });
 });

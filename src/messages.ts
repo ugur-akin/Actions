@@ -32,9 +32,9 @@ const titleProblemMessages = {
   'default-title':
     "Leaving the title as the default value isn't ideal in most situations.",
   'improper-casing':
-    'Pull titles should be written in plain English, following either `Sentence/Proper case`',
+    'Pull titles should be written in plain English, following either `Sentence/Proper case`.',
   'issue-link-in-title':
-    "Title isn't the best place to associate a pull request with an issue. See more here",
+    "Title isn't the best place to associate a pull request with an issue. See more here.",
   'stack-label-in-title':
     'We should avoid using stack labels such as `FE/BE` in the title and use labels to maintain this information.',
 } as ProblemMessageType;
@@ -58,32 +58,33 @@ export const communicationSummaryMessage = (
 ): string => {
   //TODO: Dynamic
   //TODO: Clean up the template literals
+  //TODO: Count remaining problems and include before outro
   const category = 'Communication';
   const messages = [titleProblemMessages, bodyProblemMessages];
   const problemStates = [titleProblemState, bodyProblemState];
 
   const intro = `
-Hello fellow contributor! I'm a robot and I'll be reviewing your PR looking at the most common problems we enconter for this project. I'll providing feedback regarding the ${category} aspect of your pull request *\\*beep boop\\**!
+Hello fellow contributor! I'm a robot &#129302; and I'll be reviewing your PR looking at the most common problems we enconter for this project. This feedback is regarding the **${category}** aspect of your pull request *\\*beep boop\\**!
 `;
 
   const subSectionSummaries = communicationSubSections.map(
     (subsection, idx) => {
       const title = `### Comments About Your ${subsection}:`;
       const subsectionMessages = messages[idx];
-      const summary = Object.entries(problemStates[idx]).map(
+      const summaryListItems = Object.entries(problemStates[idx]).map(
         ([problem, state]) => {
           const raw = subsectionMessages[problem];
           if (!raw) {
             throw new Error(`There is no message for the problem ${problem}!`);
           }
           // NOTE:
-          //    If state is true, pass has failed! Highlight the message and
+          //    If state is true, rule has failed! Highlight the message and
           //    add a cross emoji. If passed, strikethrough and add a check mark!
           const wrapped = state ? `- ${raw} &#10060;` : `- ~${raw}~ &#9989;`;
           return wrapped;
         }
       );
-
+      const summary = summaryListItems.join('\n');
       return `${title}
 ${summary}
 
@@ -91,13 +92,16 @@ ${summary}
     }
   );
 
-  const outro =
-    `All in all, well-communicating pull requests is an important skill, hence we encourage all candidates to build strong habits in this regard.` +
-    ` For additional information, [this article](https://hugooodias.medium.com/the-anatomy-of-a-perfect-pull-request-567382bb6067) touches on some more important points.
+  const body = subSectionSummaries.join('\n');
+
+  const outro = `\
+All in all, well-communicating pull requests is an important skill, hence we encourage all candidates to build strong\
+ habits in this regard. For additional information, [this article](https://hugooodias.medium.com/the-anatomy-of-a-perfect-pull-request-567382bb6067)\
+ touches on some more important points.
 
 Good luck &#127881;`;
 
   return `${intro}
-${subSectionSummaries}
+${body}
 ${outro}`;
 };

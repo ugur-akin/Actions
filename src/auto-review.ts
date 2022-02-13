@@ -1,13 +1,7 @@
 import * as core from '@actions/core';
 import OctokitWrapper, {PullRequestData} from './octokit-wrapper';
-import {
-  badBodyMessage,
-  badTitleMessage,
-  communicationSummaryMessage,
-  goodBodyMessage,
-  goodTitleMessage,
-} from './messages';
 import {runBodyChecks, runTitleChecks} from './reviewer';
+import {communicationSummaryMessage} from './messages';
 
 async function run(): Promise<void> {
   try {
@@ -56,10 +50,10 @@ Starting an automated review for ${category}, including checks for:
     const bodyProblemState = runBodyChecks(pullRequest, templateAsStr);
 
     core.debug('Title problem state:');
-    core.debug(`${titleProblemState}`);
+    core.debug(JSON.stringify(titleProblemState));
 
     core.debug('Body problem state:');
-    core.debug(`${bodyProblemState}`);
+    core.debug(JSON.stringify(bodyProblemState));
 
     const reviewSummary = communicationSummaryMessage(
       titleProblemState,
