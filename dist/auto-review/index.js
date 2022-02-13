@@ -40,8 +40,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const octokit_wrapper_1 = __importDefault(__nccwpck_require__(7174));
-const messages_1 = __nccwpck_require__(9112);
 const reviewer_1 = __nccwpck_require__(3187);
+const messages_1 = __nccwpck_require__(9112);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -71,11 +71,13 @@ Starting an automated review for ${category}, including checks for:
                 : yield octokit.getPullRequest();
             // core.debug(`Pull Request: ${JSON.stringify(pullRequest, null, 2)}`);
             const templateAsStr = yield octokit.getPullRequestTemplate();
-            const goodTitle = (0, reviewer_1.titlePassesChecks)(pullRequest);
-            const goodBody = (0, reviewer_1.bodyPassesChecks)(pullRequest, templateAsStr);
-            const titleSummary = goodTitle ? messages_1.goodTitleMessage : messages_1.badTitleMessage;
-            const bodySummary = goodBody ? messages_1.goodBodyMessage : messages_1.badBodyMessage;
-            const reviewSummary = (0, messages_1.communicationSummaryMessage)(titleSummary, bodySummary);
+            const titleProblemState = (0, reviewer_1.runTitleChecks)(pullRequest);
+            const bodyProblemState = (0, reviewer_1.runBodyChecks)(pullRequest, templateAsStr);
+            core.debug('Title problem state:');
+            core.debug(JSON.stringify(titleProblemState));
+            core.debug('Body problem state:');
+            core.debug(JSON.stringify(bodyProblemState));
+            const reviewSummary = (0, messages_1.communicationSummaryMessage)(titleProblemState, bodyProblemState);
             const pullReview = yield octokit.postReview(reviewSummary);
             core.debug(`Review successfully posted at ${pullReview.html_url}`);
             core.setOutput('pull_review', pullReview);
@@ -116,20 +118,62 @@ There are some things we can improve on the summary, namely:
 - We should format the body fully, not carry over any meta-information included in the template, 
 - Ideally, we should link the issue in the summary [using the appropriate keyword](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword) (or we can do it [manually](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#manually-linking-a-pull-request-to-an-issue) when this is not possible),
 `;
-const communicationSummaryMessage = (titleSummary, bodySummary) => `
-Hello fellow contributor! I'm a robot and I'll be reviewing your PR for its Communication aspects *\\*beep boop\\**!
+// TODO: Edit "Here" link, edit links in general
+// TODO: Problem encounter context!
+const titleProblemMessages = {
+    'default-title': "Leaving the title as the default value isn't ideal in most situations.",
+    'improper-casing': 'Pull titles should be written in plain English, following either `Sentence/Proper case`.',
+    'issue-link-in-title': "Title isn't the best place to associate a pull request with an issue. See more here.",
+    'stack-label-in-title': 'We should avoid using stack labels such as `FE/BE` in the title and use labels to maintain this information.',
+};
+const bodyProblemMessages = {
+    'unedited-template-line': 'When we fill in the pull request template, we should remove any unused lines.',
+    'empty-section': 'No need to include a section from the template if it has no content.',
+    'includes-title-metadata': 'The template contains some metadata information for the contributors (e.g. `(Required/Front-end only)` in section titles). Ideally, we clean these up before we submit the pull request.',
+    'issue-link-missing': 'The best way to associate a pull request with the issue(s) is by using one of the supported keywords to link it in the pull request body.',
+};
+const communicationSubSections = ['Pull Request Title', 'Pull Request Body'];
+const communicationSummaryMessage = (titleProblemState, bodyProblemState) => {
+    //TODO: Dynamic
+    //TODO: Clean up the template literals
+    //TODO: Count remaining problems and include before outro
+    const category = 'Communication';
+    const messages = [titleProblemMessages, bodyProblemMessages];
+    const problemStates = [titleProblemState, bodyProblemState];
+    const intro = `
+Hello fellow contributor! I'm a robot &#129302; and I'll be reviewing your PR looking at the most common problems we enconter for this project. This feedback is regarding the **${category}** aspect of your pull request *\\*beep boop\\**!
+`;
+    const subSectionSummaries = communicationSubSections.map((subsection, idx) => {
+        const title = `### Comments About Your ${subsection}:`;
+        const subsectionMessages = messages[idx];
+        const summaryListItems = Object.entries(problemStates[idx]).map(([problem, state]) => {
+            const raw = subsectionMessages[problem];
+            if (!raw) {
+                throw new Error(`There is no message for the problem ${problem}!`);
+            }
+            // NOTE:
+            //    If state is true, rule has failed! Highlight the message and
+            //    add a cross emoji. If passed, strikethrough and add a check mark!
+            const wrapped = state ? `- ${raw} &#10060;` : `- ~${raw}~ &#9989;`;
+            return wrapped;
+        });
+        const summary = summaryListItems.join('\n');
+        return `${title}
+${summary}
 
-### Let's start with the pull request title:
-${titleSummary}
+`;
+    });
+    const body = subSectionSummaries.join('\n');
+    const outro = `\
+All in all, well-communicating pull requests is an important skill, hence we encourage all candidates to build strong\
+ habits in this regard. For additional information, [this article](https://hugooodias.medium.com/the-anatomy-of-a-perfect-pull-request-567382bb6067)\
+ touches on some more important points.
 
-### Then there is the pull request summary:
-${bodySummary}
-
-
-All in all, well-communicating pull requests is an important skill, hence we encourage all candidates to build strong habits in this regard.` +
-    ` For additional information, [this article](https://hugooodias.medium.com/the-anatomy-of-a-perfect-pull-request-567382bb6067) touches on some more important points.
-  
 Good luck &#127881;`;
+    return `${intro}
+${body}
+${outro}`;
+};
 exports.communicationSummaryMessage = communicationSummaryMessage;
 
 
@@ -255,7 +299,7 @@ exports.default = OctokitWrapper;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.bodyPassesChecks = exports.titlePassesChecks = exports.isEmptyOrWhitespace = exports.splitBodyIntoTemplateSections = exports.getTemplateSections = exports.getSectionTypeFromSuffix = exports.toLowerCaseAlphabeticOnly = exports.startsWithCapitalizedLetter = exports.replaceDashes = exports.isLetter = void 0;
+exports.runBodyChecks = exports.runTitleChecks = exports.isEmptyOrWhitespace = exports.splitBodyIntoTemplateSections = exports.getTemplateSections = exports.getSectionTypeFromSuffix = exports.toLowerCaseAlphabeticOnly = exports.startsWithCapitalizedLetter = exports.replaceDashes = exports.isLetter = void 0;
 // TODO: Temporarily exporting everything for unit tests,
 //       hide exports using Rewire or similar.
 const githubNumberNotationRe = /([\s_-]|^)#?\d+/;
@@ -461,37 +505,23 @@ const isEmptyOrWhitespace = (str) => {
     return result;
 };
 exports.isEmptyOrWhitespace = isEmptyOrWhitespace;
-/**
- * Checks Following:
- *  - The first letter of the title is capitalized.
- *    Candidates can opt to capitalize each word or just the first one.
- *  - Title isn't same as the head branch name
- *  - Title doesn't include the issue number
- *  - Title doesn't include stack indicators such as FS, FE, IN, BE...
- *
- * TODO:
- *  - Use masked bits to return error profiles?
- *  - TS Interface for pull requests, github has one?
- */
-const titlePassesChecks = (pull) => {
+const runTitleChecks = (pull) => {
     const { title, head } = pull;
     const { ref } = head;
     const captialized = (0, exports.startsWithCapitalizedLetter)(title);
     const branchNameUntouched = (0, exports.toLowerCaseAlphabeticOnly)(title) === (0, exports.toLowerCaseAlphabeticOnly)(ref);
     const includesIssueLink = title.search(githubNumberNotationRe) !== -1;
     const includesStackLabel = title.search(stackLabelRe) !== -1;
-    console.log(`Has capitalized title: ${captialized}`);
-    console.log(`Title is default value: ${branchNameUntouched}`);
-    console.log(`Issue number in title: ${includesIssueLink}`);
-    console.log(`There is a stack label in title: ${includesStackLabel}`);
     //TODO: Use bitshift to return a code?
-    const failed = !captialized ||
-        branchNameUntouched ||
-        includesIssueLink ||
-        includesStackLabel;
-    return !failed;
+    const result = {
+        'improper-casing': !captialized,
+        'default-title': branchNameUntouched,
+        'issue-link-in-title': includesIssueLink,
+        'stack-label-in-title': includesStackLabel,
+    };
+    return result;
 };
-exports.titlePassesChecks = titlePassesChecks;
+exports.runTitleChecks = runTitleChecks;
 /**
  * Checks Following:
  *  - Any line in template appears unedited in the body (except titles),
@@ -500,7 +530,7 @@ exports.titlePassesChecks = titlePassesChecks;
  *  - Section titles are not edited (e.g. contains (required))
  *  - Body doesn't link issue (NOTE: This only works when base === default_branch)
  */
-const bodyPassesChecks = (pull, templateStr) => {
+const runBodyChecks = (pull, templateStr) => {
     const { body, head, base } = pull;
     // TODO: Move some of these property assurances outside?
     if (!head || !head.repo) {
@@ -510,10 +540,6 @@ const bodyPassesChecks = (pull, templateStr) => {
         throw new Error(`Pull request body is empty`);
     }
     const mergesToDefaultBranch = base.ref === head.repo.default_branch;
-    // const templateStr = await getPullRequestTemplate(
-    //   head.repo.owner.login,
-    //   head.repo.name
-    // );
     const templateLines = templateStr.split(endlRe);
     const bodyLines = body.split(endlRe);
     const hasUneditedLine = bodyLines.some(line => {
@@ -528,18 +554,16 @@ const bodyPassesChecks = (pull, templateStr) => {
     const bodySections = (0, exports.splitBodyIntoTemplateSections)(body, templateSections);
     const hasEmptySection = bodySections.some(section => section.templateSection && (0, exports.isEmptyOrWhitespace)(section.body));
     const hasUneditedTitle = bodySections.some(section => { var _a; return Boolean((_a = section.title) === null || _a === void 0 ? void 0 : _a.suffix); });
-    const missingAutomaticIssueLink = mergesToDefaultBranch && Boolean(body.match(automaticLinkRe));
-    console.log(`Has exact line from template: ${hasUneditedLine}`);
-    console.log(`Section without body: ${hasEmptySection}`);
-    console.log(`Titles include meta: ${hasUneditedTitle}`);
-    console.log(`Doesn't link issue: ${missingAutomaticIssueLink}`);
-    const failed = hasUneditedLine ||
-        hasEmptySection ||
-        hasUneditedTitle ||
-        missingAutomaticIssueLink;
-    return !failed;
+    const missingAutomaticIssueLink = mergesToDefaultBranch && !body.match(automaticLinkRe);
+    const result = {
+        'unedited-template-line': hasUneditedLine,
+        'empty-section': hasEmptySection,
+        'includes-title-metadata': hasUneditedTitle,
+        'issue-link-missing': missingAutomaticIssueLink,
+    };
+    return result;
 };
-exports.bodyPassesChecks = bodyPassesChecks;
+exports.runBodyChecks = runBodyChecks;
 
 
 /***/ }),

@@ -13,7 +13,7 @@
     "package": "npm run package-pull-metadata && npm run package-auto-review",
     "jest": "jest",
     "test": "npm run build && npm run jest",
-    "all": "npm run build && npm run format && npm run lint && npm run package && npm jest"
+    "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
   },
   "repository": {
     "type": "git",
