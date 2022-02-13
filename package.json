@@ -8,12 +8,12 @@
     "format": "prettier --write '**/*.ts'",
     "format-check": "prettier --check '**/*.ts'",
     "lint": "eslint src/**/*.ts",
-    "package-pull-metadata": "ncc build src/pull-metadata.ts -o dist/pull-metadata --source-map --license licenses.txt",
-    "package-auto-review": "ncc build src/auto-review.ts -o dist/auto-review --source-map --license licenses.txt",
+    "package-pull-metadata": "ncc build lib/pull-metadata.js -o dist/pull-metadata --source-map --license licenses.txt",
+    "package-auto-review": "ncc build lib/auto-review.js -o dist/auto-review --source-map --license licenses.txt",
     "package": "npm run package-pull-metadata && npm run package-auto-review",
     "jest": "jest",
     "test": "npm run build && npm run jest",
-    "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
+    "all": "npm run build && npm run format && npm run lint && npm run package && npm jest"
   },
   "repository": {
     "type": "git",
