@@ -1,0 +1,44 @@
+name: 'test-all'
+on: # rebuild any PRs and main branch changes
+  pull_request:
+    branches:
+      - main
+      - 'releases/*'
+  push:
+    branches-ignore:
+      - main
+      - 'releases/*'
+
+jobs:
+  build: # make sure build/ci work properly
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          npm install
+      - run: |
+          npm run all
+  test-pull-metadata: # make sure the action works on a clean machine without building
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./pull-metadata
+        with:
+          owner: 'ugur-akin'
+          repository: 'team-actions-demo'
+          pull_number: '3'
+          GITHUB_TOKEN: ${{ github.token }}
+          AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
+          AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
+  test-auto-review: # make sure the action works on a clean machine without building
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./auto-review
+        with:
+          category: 'Communication'
+          tags: '[ "suboptimal-branch-name", "suboptimal-commit-names", "suboptimal-unedited-title", "modified-pr-template", "leftover-pr-template" ]'
+          owner: 'ugur-akin'
+          repository: 'team-actions-demo'
+          pull_number: '3'
+          GITHUB_TOKEN: ${{ github.token }}
