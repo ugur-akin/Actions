@@ -2,28 +2,29 @@
   "name": "typescript-action",
   "version": "0.0.0",
   "private": true,
-  "description": "TypeScript template action",
-  "main": "lib/main.js",
+  "description": "Hatchways actions",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --build",
     "format": "prettier --write '**/*.ts'",
     "format-check": "prettier --check '**/*.ts'",
     "lint": "eslint src/**/*.ts",
-    "package": "ncc build --source-map --license licenses.txt",
+    "package-pull-metadata": "ncc build src/pull-metadata.ts -o dist/pull-metadata --source-map --license licenses.txt",
+    "package-auto-review": "ncc build src/auto-review.ts -o dist/auto-review --source-map --license licenses.txt",
+    "package": "npm run package-pull-metadata && npm run package-auto-review",
     "jest": "jest",
     "test": "npm run build && npm run jest",
     "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/typescript-action.git"
+    "url": "git+https://github.com/ugur-akin/actions.git"
   },
   "keywords": [
     "actions",
     "node",
     "setup"
   ],
-  "author": "",
+  "author": "Ugur Akin",
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.6.0",

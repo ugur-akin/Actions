@@ -56,4 +56,4 @@ outputs:
 runs:
   using: node16
 
-  main: ../lib/pull-metadata.js
+  main: ../dist/pull-metadata/index.js
