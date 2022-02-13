@@ -35,4 +35,4 @@ outputs:
       Pull request review object after all the comments have been added
 runs:
   using: node16
-  main: dist/index.js
+  main: ../lib/auto-review.js
