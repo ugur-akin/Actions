@@ -27,7 +27,7 @@ jobs:
           owner: 'ugur-akin'
           repository: 'team-actions-demo'
           pull_number: '3'
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
           AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
   test-auto-review: # make sure the action works on a clean machine without building
@@ -41,4 +41,4 @@ jobs:
           owner: 'ugur-akin'
           repository: 'team-actions-demo'
           pull_number: '3'
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
